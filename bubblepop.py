@@ -5,10 +5,8 @@ import random
 import time
 import numpy as np
 from collections import deque
-# Define some colors
-BLACK = (  0,   0,   0)
+
 WHITE = (255, 255, 255)
-RED   = (255,   0,   0)
 
 pygame.init()
 pygame.mixer.init()
@@ -34,21 +32,18 @@ class Signal(object):
 class Bubble(pygame.sprite.Sprite):
     SPEED_MULTIPLIER = 1.0
     BUBBLE_IMG = pygame.image.load('media/sprites/bubble.png')
-    def __init__(self, color, side, px=0, py=0):
+    def __init__(self, side, px=0, py=0):
  
         super(Bubble, self).__init__()
+
+        self.is_popped = False
 
         self.bubble_popped = Signal(tuple, float)
 
         self.direction = np.random.rand()*np.pi*2 
         self.speed = np.random.randint(5,100)
-        # self.speed = 100
 
-        # self.image = pygame.Surface([side, side])
-        self.image = pygame.transform.scale(Bubble.BUBBLE_IMG.copy(), [side, side])
-
-        # self.image.fill(WHITE)
-        self.image.set_colorkey(WHITE)
+        self.image = pygame.transform.scale(Bubble.BUBBLE_IMG.copy(), [side, side]).convert_alpha()
 
         self.side = side
         self.rect = self.image.get_rect()
@@ -58,31 +53,34 @@ class Bubble(pygame.sprite.Sprite):
         self.true_x = px
         self.true_y = py
 
-        # pygame.draw.circle(self.image, color, self.image.get_rect().center, int(side/2), 2)
-        # center = self.image.get_rect().center
-        # pygame.gfxdraw.aacircle(self.image, center[0], center[1], int(side/2)-1, color)
-
     def true_speed(self):
         return int(Bubble.SPEED_MULTIPLIER * self.speed)
  
     def update(self, dt):
-        font = pygame.font.Font(None, 28)
-        text = font.render(str(self.true_speed()), True, (0,255,0))
+        if not self.is_popped:
 
-        dx = self.true_speed() * dt * np.cos(self.direction)
-        dy = self.true_speed() * dt * np.sin(self.direction)
+            dx = self.true_speed() * dt * np.cos(self.direction)
+            dy = self.true_speed() * dt * np.sin(self.direction)
 
-        # prevent bubbles from getting stuck
-        if dx + dy == 0:
-            dx = 1
+            # prevent bubbles from getting stuck
+            if dx + dy == 0:
+                dx = 1
 
-        self.true_x += dx
-        self.true_y += dy
+            # maintain true position so differences < 0.5 don't get the bubble stuck
+            self.true_x += dx
+            self.true_y += dy
 
-        self.rect.x = np.round(self.true_x)
-        self.rect.y = np.round(self.true_y)
+            self.rect.x = np.round(self.true_x)
+            self.rect.y = np.round(self.true_y)
 
-        # self.image.blit(text, [self.side/2-text.get_width()/2, self.side/2-text.get_height()/2])
+
+        else:
+            font = pygame.font.Font(None, 36)
+            text = font.render(str(self.score()), False, (92,150,255))
+            self.image.blit(text, [self.side/2-text.get_width()/2, self.side/2-text.get_height()/2])
+            self.image.set_alpha(self.image.get_alpha() - 255*dt*2)
+            if self.image.get_alpha() <= 0:
+                self.kill()
 
         if not pygame.display.get_surface().get_rect().contains(self.rect):
             self.kill()
@@ -91,12 +89,20 @@ class Bubble(pygame.sprite.Sprite):
         return self.rect.collidepoint(pos)
 
     def hit(self, pos):
-        self.kill()
-        popsound.play()
-        self.bubble_popped.emit(pos, pygame.time.get_ticks())
+        if not self.is_popped:
+            self.is_popped = True
+            self.show_score()
+            popsound.play()
+            self.bubble_popped.emit(pos, pygame.time.get_ticks())
 
     def score(self):
-        return int(self.speed/5) + int((75-self.side)/20)
+        return max(int(self.speed/5) + int((75-self.side)/15), 1)
+
+    def show_score(self):
+        self.image = pygame.Surface([self.side, self.side])
+        self.image.fill(WHITE)
+        self.image.set_colorkey(WHITE)
+        self.image.set_alpha(255)
 
 class BubbleGame(object):
     screen_width = 1024
@@ -133,7 +139,7 @@ class BubbleGame(object):
             self.spawn_bubble()
 
     def spawn_bubble(self):
-        sprite = Bubble(BLACK, random.randrange(10,75), random.randrange(self.screen_width), random.randrange(self.screen_height))
+        sprite = Bubble(random.randrange(20,100), random.randrange(self.screen_width), random.randrange(self.screen_height))
         # sprite.bubble_popped.connect(self.bubble_clicked)
         self.bubble_group.add(sprite)
         self.all_sprites_list.add(sprite)
