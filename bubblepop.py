@@ -33,6 +33,7 @@ class Signal(object):
 
 class Bubble(pygame.sprite.Sprite):
     SPEED_MULTIPLIER = 1.0
+    BUBBLE_IMG = pygame.image.load('media/sprites/bubble.png')
     def __init__(self, color, side, px=0, py=0):
  
         super(Bubble, self).__init__()
@@ -43,9 +44,10 @@ class Bubble(pygame.sprite.Sprite):
         self.speed = np.random.randint(5,100)
         # self.speed = 100
 
-        self.image = pygame.Surface([side, side])
+        # self.image = pygame.Surface([side, side])
+        self.image = pygame.transform.scale(Bubble.BUBBLE_IMG.copy(), [side, side])
 
-        self.image.fill(WHITE)
+        # self.image.fill(WHITE)
         self.image.set_colorkey(WHITE)
 
         self.side = side
@@ -56,7 +58,7 @@ class Bubble(pygame.sprite.Sprite):
         self.true_x = px
         self.true_y = py
 
-        pygame.draw.circle(self.image, color, self.image.get_rect().center, int(side/2), 2)
+        # pygame.draw.circle(self.image, color, self.image.get_rect().center, int(side/2), 2)
         # center = self.image.get_rect().center
         # pygame.gfxdraw.aacircle(self.image, center[0], center[1], int(side/2)-1, color)
 
