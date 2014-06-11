@@ -15,6 +15,7 @@ spawnsound = pygame.mixer.Sound('media/sounds/104950__glaneur-de-sons__bubbles-2
 thudsound = pygame.mixer.Sound('media/sounds/215162__otisjames__thud-clipped.wav')
 slow1sound = pygame.mixer.Sound('media/sounds/109213__timbre__similar-to-tape-slowing-to-stop-1.wav')
 speed1sound = pygame.mixer.Sound('media/sounds/109213__timbre__similar-to-tape-slowing-to-stop-1-rev.wav')
+levelupsound = pygame.mixer.Sound('media/sounds/76234__jivatma07__level-up-3note2.wav')
 
 background = pygame.image.load('media/backgrounds/fudge.jpg')
 
@@ -32,6 +33,8 @@ class Signal(object):
 class Bubble(pygame.sprite.Sprite):
     SPEED_MULTIPLIER = 1.0
     BUBBLE_IMG = pygame.image.load('media/sprites/bubble.png')
+    MIN_SPEED = 5
+    MAX_SPEED = 100
     def __init__(self, side, px=0, py=0):
  
         super(Bubble, self).__init__()
@@ -41,7 +44,7 @@ class Bubble(pygame.sprite.Sprite):
         self.bubble_popped = Signal(tuple, float)
 
         self.direction = np.random.rand()*np.pi*2 
-        self.speed = np.random.randint(5,100)
+        self.speed = np.random.randint(Bubble.MIN_SPEED,Bubble.MAX_SPEED)
 
         self.image = pygame.transform.scale(Bubble.BUBBLE_IMG.copy(), [side, side]).convert_alpha()
 
@@ -96,7 +99,7 @@ class Bubble(pygame.sprite.Sprite):
             self.bubble_popped.emit(pos, pygame.time.get_ticks())
 
     def score(self):
-        return max(int(self.speed/5) + int((75-self.side)/15), 1)
+        return max(int(self.speed/Bubble.MAX_SPEED*10) + int((75-self.side)/10), 1)
 
     def show_score(self):
         self.image = pygame.Surface([self.side, self.side])
@@ -135,8 +138,13 @@ class BubbleGame(object):
 
         self.bonus = 0
 
+        self.level = 1
+
         for i in range(50):
             self.spawn_bubble()
+
+    def level_from_score(self, score):
+        return int(np.floor((score + 20) ** 0.24) - 1)
 
     def spawn_bubble(self):
         sprite = Bubble(random.randrange(20,100), random.randrange(self.screen_width), random.randrange(self.screen_height))
@@ -163,10 +171,22 @@ class BubbleGame(object):
                 (self.click_history[1][4] - self.click_history[0][4]) / 1000
             )
 
+    def levelup(self, level):
+        levelupsound.play()
+
+    def update_level(self):
+        newlevel = max(self.level, self.level_from_score(self.score))
+        if newlevel > self.level:
+            self.level = newlevel
+            self.levelup(newlevel)
+
+        text = self.font.render('Level: %s' % self.level, True, (0, 255, 0))
+        self.screen.blit(text, [5, 0])
+
     def update_score(self, delta):
         self.score += delta
         text = self.font.render('Score: %s' % self.score, True, (0, 255, 0))
-        self.screen.blit(text, [5, 0])
+        self.screen.blit(text, [5, text.get_height()+5])
 
     def update_bonus(self):
         self.set_bonus(self.bonus)
@@ -230,6 +250,7 @@ class BubbleGame(object):
             self.all_sprites_list.update(dt)
             self.all_sprites_list.draw(self.screen)    
             self.update_bonus()
+            self.update_level()
             self.update_score(0)
             # Go ahead and update the screen with what we've drawn.
             pygame.display.flip()
