@@ -162,6 +162,8 @@ class BubbleGame(object):
 
         self.level = 1
 
+        self.paused = False
+
         for i in range(50):
             self.spawn_bubble()
 
@@ -260,40 +262,54 @@ class BubbleGame(object):
         self.all_sprites_list.add(Banner('Level 1', (self.screen_width/2, self.screen_height/2)))
         self.all_sprites_list.draw(self.screen)
         while not self.done:
-            dt = 1/self.clock.tick(30)
+            advance1 = False
+            if not self.paused:
+                dt = 1/self.clock.tick(30)
             for event in pygame.event.get(): 
-                if event.type == pygame.QUIT: 
+                if not self.paused:
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        pos = pygame.mouse.get_pos()
+                        clicked_objs = [s for s in self.bubble_group if s.clicked(pos)]
+                        for s in clicked_objs:
+                            s.hit(pos)
+                            self.update_score(s.score())
+                            self.set_bonus(self.bonus + 0.1)
+                        if clicked_objs:
+                            self.update_history(pos, s.side, s.speed, s.direction)
+                            self.last_hit_time = pygame.time.get_ticks()
+                        else:
+                            self.update_score(-1)
+                            self.end_powerup()
+                            thudsound.play()
+
+                    elif event.type == BubbleGame.UPDATE_BONUS:
+                        self.bonus_attrition()
+                        self.check_powerup_complete()
+
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_SPACE:
+                        self.paused = not self.paused
+                        if self.paused:
+                            self.all_sprites_list.add(Banner('Paused', (self.screen_width/2, self.screen_height/2), lifespan=0.5))
+                            advance1 = True
+
+                elif event.type == pygame.QUIT: 
                     self.done = True
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    pos = pygame.mouse.get_pos()
-                    clicked_objs = [s for s in self.bubble_group if s.clicked(pos)]
-                    for s in clicked_objs:
-                        s.hit(pos)
-                        self.update_score(s.score())
-                        self.set_bonus(self.bonus + 0.1)
-                    if clicked_objs:
-                        self.update_history(pos, s.side, s.speed, s.direction)
-                        self.last_hit_time = pygame.time.get_ticks()
-                    else:
-                        self.update_score(-1)
-                        self.end_powerup()
-                        thudsound.play()
 
-                elif event.type == BubbleGame.UPDATE_BONUS:
-                    self.bonus_attrition()
-                    self.check_powerup_complete()
 
-            self.screen.blit(background, self.screen.get_rect())
-         
-            self.maybe_spawn_bubble()
+            if not self.paused or advance1:
+                self.screen.blit(background, self.screen.get_rect())
+             
+                self.maybe_spawn_bubble()
 
-            self.all_sprites_list.update(dt)
-            self.all_sprites_list.draw(self.screen)    
-            self.update_bonus()
-            self.update_level()
-            self.update_score(0)
-            # Go ahead and update the screen with what we've drawn.
+                self.all_sprites_list.update(dt)
+                self.all_sprites_list.draw(self.screen)    
+                self.update_bonus()
+                self.update_level()
+                self.update_score(0)
+
             pygame.display.flip()
+            advance1 = False
          
         pygame.quit()
 
