@@ -195,6 +195,7 @@ class BubbleGame(object):
 
     def levelup(self, level):
         levelupsound.play()
+        Bubble.SPEED_MULTIPLIER = level
         self.all_sprites_list.add(Banner('Level %s' % self.level, (self.screen_width/2, self.screen_height/2)))
 
     def update_level(self):
@@ -240,7 +241,7 @@ class BubbleGame(object):
         if self.in_powerup:
             self.in_powerup = False
             self.powerup_time = 0
-            Bubble.SPEED_MULTIPLIER = 1.0
+            Bubble.SPEED_MULTIPLIER = self.level
             speed1sound.play()
             self.bonus = 0
 
@@ -248,7 +249,7 @@ class BubbleGame(object):
         self.in_powerup = True
         slow1sound.play()
         self.powerup_time = pygame.time.get_ticks()
-        Bubble.SPEED_MULTIPLIER = 0.5
+        Bubble.SPEED_MULTIPLIER = self.level * 0.5
 
     def check_powerup_complete(self):
         if self.in_powerup and (pygame.time.get_ticks() - self.powerup_time > BubbleGame.POWERUP_DURATION):
