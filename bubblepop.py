@@ -30,6 +30,28 @@ class Signal(object):
     def connect(self, func):
         self.connections.append(func)
 
+class Banner(pygame.sprite.Sprite):
+
+    def __init__(self, text, center, lifespan=1):
+        super(Banner, self).__init__()
+        self.lifespan = lifespan
+        self.font = pygame.font.Font(None, 60)
+        self.text = self.font.render(str(text), False, (92,150,255))
+        self.image = pygame.Surface(self.text.get_size())
+        self.image.fill(WHITE)
+        self.image.set_colorkey(WHITE)
+        self.image.set_alpha(255)
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+
+        self.image.blit(self.text, [0,0])
+
+    def update(self, dt):
+        self.image.set_alpha(self.image.get_alpha() - 255*dt/self.lifespan)
+        
+        if self.image.get_alpha() <= 0:
+            self.kill()
+
 class Bubble(pygame.sprite.Sprite):
     SPEED_MULTIPLIER = 1.0
     BUBBLE_IMG = pygame.image.load('media/sprites/bubble.png')
@@ -112,7 +134,7 @@ class BubbleGame(object):
     screen_height = 681
     UPDATE_BONUS = 1
     POWERUP_DURATION = 5000
-    BONUS_THRESHOLD = 0.5
+    BONUS_THRESHOLD = 5.0
 
     def __init__(self):
         self.done = False
@@ -173,6 +195,7 @@ class BubbleGame(object):
 
     def levelup(self, level):
         levelupsound.play()
+        self.all_sprites_list.add(Banner('Level %s' % self.level, (self.screen_width/2, self.screen_height/2)))
 
     def update_level(self):
         newlevel = max(self.level, self.level_from_score(self.score))
@@ -192,8 +215,13 @@ class BubbleGame(object):
         self.set_bonus(self.bonus)
 
     def set_bonus(self, bonus):
-        if not self.in_powerup and bonus > self.bonus and bonus > BubbleGame.BONUS_THRESHOLD:
-            self.powerup(1)
+        if bonus >= BubbleGame.BONUS_THRESHOLD and bonus > self.bonus:
+            if not self.in_powerup:
+                self.powerup(1)
+            else:
+                self.extend_powerup()
+        # if not self.in_powerup and bonus > self.bonus and bonus >= BubbleGame.BONUS_THRESHOLD:
+        #     self.powerup(1)
         self.bonus = bonus
         text = self.font.render('Bonus: %s' % self.bonus, True, (0,255,0))
         self.screen.blit(text, [self.screen_width - text.get_width() - 5, 0])
@@ -204,6 +232,18 @@ class BubbleGame(object):
             self.bonus = max(0, self.bonus - 0.1)
         self.set_bonus(self.bonus)
 
+    def extend_powerup(self):
+        self.in_powerup = True
+        self.powerup_time = pygame.time.get_ticks()
+
+    def end_powerup(self):
+        if self.in_powerup:
+            self.in_powerup = False
+            self.powerup_time = 0
+            Bubble.SPEED_MULTIPLIER = 1.0
+            speed1sound.play()
+            self.bonus = 0
+
     def powerup(self, level):
         self.in_powerup = True
         slow1sound.play()
@@ -212,14 +252,11 @@ class BubbleGame(object):
 
     def check_powerup_complete(self):
         if self.in_powerup and (pygame.time.get_ticks() - self.powerup_time > BubbleGame.POWERUP_DURATION):
-            self.in_powerup = False
-            self.powerup_time = 0
-            Bubble.SPEED_MULTIPLIER = 1.0
-            speed1sound.play()
-            self.bonus = 0
+            self.end_powerup()
 
     def run(self):
         pygame.time.set_timer(BubbleGame.UPDATE_BONUS, 1000)
+        self.all_sprites_list.add(Banner('Level 1', (self.screen_width/2, self.screen_height/2)))
         self.all_sprites_list.draw(self.screen)
         while not self.done:
             dt = 1/self.clock.tick(30)
@@ -238,7 +275,9 @@ class BubbleGame(object):
                         self.last_hit_time = pygame.time.get_ticks()
                     else:
                         self.update_score(-1)
+                        self.end_powerup()
                         thudsound.play()
+
                 elif event.type == BubbleGame.UPDATE_BONUS:
                     self.bonus_attrition()
                     self.check_powerup_complete()
