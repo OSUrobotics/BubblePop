@@ -107,7 +107,7 @@ class Bubble(pygame.sprite.Sprite):
             if self.image.get_alpha() <= 0:
                 self.kill()
 
-        if not pygame.display.get_surface().get_rect().contains(self.rect):
+        if not pygame.display.get_surface().get_rect().colliderect(self.rect):
             self.kill()
 
     def clicked(self, pos):
