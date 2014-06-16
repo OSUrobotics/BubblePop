@@ -130,14 +130,22 @@ class Bubble(pygame.sprite.Sprite):
         self.image.set_alpha(255)
 
 class BubbleGame(object):
-    screen_width = 1024
-    screen_height = 681
     UPDATE_BONUS = 1
     POWERUP_DURATION = 5000
     BONUS_THRESHOLD = 5.0
 
-    def __init__(self):
+    def __init__(self, fullscreen=False):
         self.done = False
+
+        if fullscreen:
+            self.screen_width, self.screen_height = pygame.display.list_modes()[0]
+            flags = pygame.FULLSCREEN
+        else:
+            self.screen_width = 1024
+            self.screen_height = 681
+            flags = 0
+
+        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height], flags)
 
         self.bubble_group = pygame.sprite.Group()         
         self.all_sprites_list = pygame.sprite.Group()
@@ -147,7 +155,7 @@ class BubbleGame(object):
         self.score = 0
         self.font = pygame.font.Font(None, 36)
 
-        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
+        
 
         self.movement = Signal(tuple, tuple, float, float, float)
 
@@ -258,6 +266,7 @@ class BubbleGame(object):
             self.end_powerup()
 
     def run(self):
+        scaled_background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
         pygame.time.set_timer(BubbleGame.UPDATE_BONUS, 1000)
         self.all_sprites_list.add(Banner('Level 1', (self.screen_width/2, self.screen_height/2)))
         self.all_sprites_list.draw(self.screen)
@@ -300,7 +309,7 @@ class BubbleGame(object):
 
 
             if not self.paused or advance1:
-                self.screen.blit(background, self.screen.get_rect())
+                self.screen.blit(scaled_background, self.screen.get_rect())
              
                 self.maybe_spawn_bubble()
 
@@ -321,6 +330,6 @@ def gather_data(*args):
     print d, args[5], args[2]
 
 if __name__ == '__main__':
-    game = BubbleGame()
+    game = BubbleGame(fullscreen=False)
     game.movement.connect(gather_data)
     game.run()
