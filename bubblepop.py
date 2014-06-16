@@ -292,6 +292,8 @@ class BubbleGame(object):
                         if self.paused:
                             self.all_sprites_list.add(Banner('Paused', (self.screen_width/2, self.screen_height/2), lifespan=0.5))
                             advance1 = True
+                    elif event.key == pygame.K_ESCAPE:
+                        self.done = True
 
                 elif event.type == pygame.QUIT: 
                     self.done = True
