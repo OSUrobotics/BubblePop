@@ -134,8 +134,9 @@ class BubbleGame(object):
     POWERUP_DURATION = 5000
     BONUS_THRESHOLD = 5.0
 
-    def __init__(self, fullscreen=False):
+    def __init__(self, bubble_sizes=(20,100), fullscreen=False):
         self.done = False
+        self.bubble_size_range = bubble_sizes
 
         if fullscreen:
             self.screen_width, self.screen_height = pygame.display.list_modes()[0]
@@ -154,8 +155,6 @@ class BubbleGame(object):
          
         self.score = 0
         self.font = pygame.font.Font(None, 36)
-
-        
 
         self.movement = Signal(tuple, tuple, float, float, float)
 
@@ -179,7 +178,11 @@ class BubbleGame(object):
         return int(np.floor((score + 20) ** 0.24) - 1)
 
     def spawn_bubble(self):
-        sprite = Bubble(random.randrange(20,100), random.randrange(self.screen_width), random.randrange(self.screen_height))
+        sprite = Bubble(
+            random.randrange(*self.bubble_size_range),
+            random.randrange(self.screen_width),
+            random.randrange(self.screen_height)
+        )
         # sprite.bubble_popped.connect(self.bubble_clicked)
         self.bubble_group.add(sprite)
         self.all_sprites_list.add(sprite)
@@ -330,6 +333,6 @@ def gather_data(*args):
     print d, args[5], args[2]
 
 if __name__ == '__main__':
-    game = BubbleGame(fullscreen=False)
+    game = BubbleGame(bubble_sizes=(20,100), fullscreen=False)
     game.movement.connect(gather_data)
     game.run()
