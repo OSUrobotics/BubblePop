@@ -137,16 +137,13 @@ class BubbleGame(object):
     def __init__(self, bubble_sizes=(20,100), fullscreen=False):
         self.done = False
         self.bubble_size_range = bubble_sizes
+        self.fullscreen = fullscreen
 
         if fullscreen:
-            self.screen_width, self.screen_height = pygame.display.list_modes()[0]
-            flags = pygame.FULLSCREEN
+            self._set_fullscreen()
         else:
-            self.screen_width = 1024
-            self.screen_height = 681
-            flags = 0
-
-        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height], flags)
+            self._set_windowed()
+        self._update_background()
 
         self.bubble_group = pygame.sprite.Group()         
         self.all_sprites_list = pygame.sprite.Group()
@@ -173,6 +170,27 @@ class BubbleGame(object):
 
         for i in range(50):
             self.spawn_bubble()
+
+    def _toggle_fullscreen(self):
+        if self.fullscreen:
+            self._set_windowed()
+            self.fullscreen = False
+        else:
+            self._set_fullscreen()
+            self.fullscreen = True
+        self._update_background()
+
+    def _set_fullscreen(self):
+        self.screen_width, self.screen_height = pygame.display.list_modes()[0]
+        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height], pygame.FULLSCREEN)
+
+    def _set_windowed(self):
+        self.screen_width = 1024
+        self.screen_height = 681
+        self.screen = pygame.display.set_mode([self.screen_width, self.screen_height], 0)
+
+    def _update_background(self):
+        self.scaled_background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
 
     def level_from_score(self, score):
         return int(np.floor((score + 20) ** 0.24) - 1)
@@ -269,7 +287,6 @@ class BubbleGame(object):
             self.end_powerup()
 
     def run(self):
-        scaled_background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
         pygame.time.set_timer(BubbleGame.UPDATE_BONUS, 1000)
         self.all_sprites_list.add(Banner('Level 1', (self.screen_width/2, self.screen_height/2)))
         self.all_sprites_list.draw(self.screen)
@@ -306,13 +323,15 @@ class BubbleGame(object):
                             advance1 = True
                     elif event.key == pygame.K_ESCAPE:
                         self.done = True
+                    elif event.key == pygame.K_F11:
+                        self._toggle_fullscreen()
 
                 elif event.type == pygame.QUIT: 
                     self.done = True
 
 
             if not self.paused or advance1:
-                self.screen.blit(scaled_background, self.screen.get_rect())
+                self.screen.blit(self.scaled_background, self.screen.get_rect())
              
                 self.maybe_spawn_bubble()
 
