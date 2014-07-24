@@ -243,7 +243,7 @@ class BubbleGame(object):
     def bonus_attrition(self):
         now = pygame.time.get_ticks()
         if now - self.last_hit_time > 1000:
-            self.bonus = max(0, self.bonus - 0.1)
+            self.bonus = round(max(0, self.bonus - 0.1), 1)
         self.set_bonus(self.bonus)
 
     def extend_powerup(self):
