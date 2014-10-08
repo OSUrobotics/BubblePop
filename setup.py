@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 import os
 
 root = 'media'
@@ -13,7 +13,10 @@ setup(name='BubblePop',
       author_email='dan@lazewatsky.com',
       url='https://github.com/OSUrobotics/BubblePop',
       license='BSD',
+      packages=find_packages(),
       scripts=['bubblepop.py'],
+      # py_modules=['bub']
       data_files=media_files,
+      # include_package_data=True,
       install_requires=['pygame>=1.9.1', 'numpy>=1.7']
       )
